@@ -30,18 +30,23 @@ def test_upcoming_present_past_hidden(tmp_path):
 
 def test_sections(tmp_path):
     evs = {e.title: e for e in load()}
-    assert section_for(evs["Khruangbin"], TODAY) == "week"
+    assert section_for(evs["Khruangbin"], TODAY) == "today"
+    assert section_for(evs["Tomorrow Open Mic"], TODAY) == "tomorrow"
+    assert section_for(evs["Comedy Night with Maria Bamford"], TODAY) == "week"
+    assert section_for(evs["Plein Air Landscapes Exhibit"], TODAY) == "ongoing"
     assert section_for(evs["Friday Night Rock: Desert Highway"], TODAY) == "weekend"
     assert section_for(evs["Sunset Beach Concert"], TODAY) == "weekend"
     assert section_for(evs["Morro Bay Harbor Festival"], TODAY) == "weekend"
     assert section_for(evs["Wine & Cheese Pairing Dinner"], TODAY) == "later"
     assert section_for(evs["Thursday Trivia Night"], TODAY) == "recurring"
     # on a Saturday the weekend starts today
-    assert section_for(evs["Sunset Beach Concert"], date(2026, 10, 10)) == "weekend"
+    assert section_for(evs["Sunset Beach Concert"], date(2026, 10, 10)) == "today"
+    assert section_for(evs["Kayak the Estuary Guided Tour"], date(2026, 10, 10)) == "tomorrow"
     # multi-day event already underway counts as today
-    assert section_for(evs["Morro Bay Harbor Festival"], date(2026, 10, 11)) == "weekend"
+    assert section_for(evs["Morro Bay Harbor Festival"], date(2026, 10, 11)) == "today"
     html = html_of(tmp_path)
-    assert html.index("This weekend") < html.index("This week <") < html.index("Later") < html.index("Recurring")
+    assert html.index(">Today") < html.index(">Tomorrow") < html.index("This weekend") < html.index("Rest of this week")         < html.index(">Later") < html.index("Ongoing exhibits") < html.index(">Recurring")
+    assert "Far Future Gala" not in html  # beyond 60 days
     assert "Fri, Oct 9" in html and "Mon, Oct 5" in html
     assert "Oct 10 to Oct 12" in html
     assert "<details>" in html
@@ -96,3 +101,10 @@ def test_source_stats_footer_and_flyer(tmp_path):
     with Image.open(thumbs[0]) as t:
         assert t.width == 400
     assert 'loading="lazy"' in html
+
+
+def test_later_weeks_collapsed_and_compact(tmp_path):
+    html = html_of(tmp_path)
+    assert 'class="wk"' in html and "Week of Nov 2" in html  # Art After Dark (Nov 6) is >14 days out
+    assert "Plein Air Landscapes Exhibit" in html
+    assert 'class="card cat-music"' in html
