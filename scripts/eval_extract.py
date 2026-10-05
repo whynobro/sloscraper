@@ -59,6 +59,8 @@ def main() -> int:
         for e in evs:
             print(f"   got: {e.title!r} {e.date} venue={e.venue!r} town={e.town!r} time={e.time!r} "
                   f"cat={e.category} conf={e.confidence}")
+        if meta.get("expected_time") and not any(e.time for e in evs):
+            print("   WARN: expected a time, got none:", meta["expected_time"])
     print(f"\nfiles ok: {files_ok}/{len(expected)}  event-date recall: {tot_hit}/{tot_exp}  extra events: {tot_extra}")
     return 0 if files_ok == len(expected) else 1
 
