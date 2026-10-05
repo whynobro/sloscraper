@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>SLO Events</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f6f1e7; --surface: #fffdf8; --ink: #1f2a2e; --muted: #5d6b70;
+  --line: #e3dccb; --accent: #0f766e; --accent-ink: #ffffff; --warn: #b45309;
+  --warn-bg: #fef3c7; --stale: #b91c1c; --chip: #ece5d3; --shadow: 0 1px 2px rgba(31,42,46,.08);
+  --font: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --display: "Bricolage Grotesque", Inter, system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12191b; --surface: #1b2528; --ink: #ece7da; --muted: #9db0b4;
+    --line: #2b3a3e; --accent: #4fd1c0; --accent-ink: #08201d; --warn: #fbbf24;
+    --warn-bg: #3a2c0a; --stale: #f87171; --chip: #243034; --shadow: none;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.45 var(--font); overflow-x: hidden; }
+.wrap { max-width: 720px; margin: 0 auto; padding: 0 16px 48px; }
+header { padding: 20px 0 8px; }
+h1 { font: 700 2rem/1.1 var(--display); margin: 0; letter-spacing: -.02em; }
+.meta { color: var(--muted); font-size: .9rem; margin-top: 4px; }
+.meta .stale { color: var(--stale); font-weight: 600; }
+.filters { position: sticky; top: 0; z-index: 20; background: var(--bg); padding: 8px 0; border-bottom: 1px solid var(--line); }
+.chips { display: flex; gap: 6px; overflow-x: auto; padding: 3px 0; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chip { flex: none; border: 1px solid var(--line); background: var(--chip); color: var(--ink); font: 500 .85rem var(--font);
+  padding: 7px 12px; border-radius: 999px; cursor: pointer; min-height: 36px; }
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+section { margin-top: 24px; }
+section > h2, summary h2 { font: 700 1.35rem var(--display); margin: 0 0 4px; letter-spacing: -.01em; }
+summary { cursor: pointer; list-style: none; }
+summary::-webkit-details-marker { display: none; }
+summary h2::after { content: " +"; color: var(--muted); }
+details[open] summary h2::after { content: " \2212"; }
+.count { color: var(--muted); font: 500 .9rem var(--font); }
+.day h3 { position: sticky; top: 53px; z-index: 10; background: var(--bg); margin: 0; padding: 10px 0 6px;
+  font: 600 .8rem var(--font); text-transform: uppercase; letter-spacing: .08em; color: var(--accent); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin: 0 0 10px;
+  box-shadow: var(--shadow); display: flex; gap: 12px; }
+.card .body { flex: 1; min-width: 0; }
+.card h4 { font: 600 1.05rem/1.25 var(--display); margin: 0; overflow-wrap: anywhere; }
+.perf, .where, .info { color: var(--muted); font-size: .9rem; margin-top: 3px; overflow-wrap: anywhere; }
+.where { color: var(--ink); }
+.pill { display: inline-block; font: 600 .7rem var(--font); padding: 2px 8px; border-radius: 999px; background: var(--chip);
+  color: var(--accent); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .04em; }
+.badge { display: inline-block; font: 600 .7rem var(--font); padding: 2px 8px; border-radius: 999px; background: var(--warn-bg);
+  color: var(--warn); margin-left: 4px; }
+.links { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 8px; font-size: .88rem; }
+.links a { color: var(--accent); text-decoration: none; font-weight: 500; padding: 4px 0; }
+.links a:hover { text-decoration: underline; }
+.card img { width: 84px; height: 84px; object-fit: cover; border-radius: 10px; flex: none; background: var(--chip); align-self: flex-start; }
+.empty { color: var(--muted); padding: 12px 0; }
+.hidden { display: none !important; }
+footer { margin-top: 40px; color: var(--muted); font-size: .85rem; }
+footer h2 { font: 600 1rem var(--display); color: var(--ink); }
+table { border-collapse: collapse; width: 100%; }
+th, td { text-align: left; padding: 5px 6px 5px 0; border-bottom: 1px solid var(--line); vertical-align: top; overflow-wrap: anywhere; }
+td.err { color: var(--stale); }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>SLO Events</h1>
+  <div class="meta"><span id="updated" data-iso="{{ generated_iso }}">Updated {{ generated_iso }}</span> &middot; <span id="count">{{ total }}</span> of {{ total }} events</div>
+</header>
+
+<div class="filters" id="filters">
+  <div class="chips" data-group="cat" aria-label="Category">
+    <button class="chip" data-v="" aria-pressed="true">All</button>
+    {% for key, label in categories %}<button class="chip" data-v="{{ key }}" aria-pressed="false">{{ label }}</button>{% endfor %}
+  </div>
+  <div class="chips" data-group="town" aria-label="Town">
+    <button class="chip" data-v="" aria-pressed="true">All towns</button>
+    {% for t in towns %}<button class="chip" data-v="{{ t }}" aria-pressed="false">{{ t }}</button>{% endfor %}
+  </div>
+</div>
+
+<main>
+{% macro card(c) %}
+<article class="card" data-cat="{{ c.category }}" data-town="{{ c.town }}">
+  <div class="body">
+    <span class="pill">{{ c.category_label }}</span>{% if c.low_confidence %}<span class="badge" title="Details were read from a flyer or post and may be off">check flyer</span>{% endif %}
+    <h4>{{ c.title }}</h4>
+    {% if c.performers %}<div class="perf">{{ c.performers }}</div>{% endif %}
+    {% if c.venue or c.town %}<div class="where">{{ [c.venue, c.town] | select | join(", ") }}</div>{% endif %}
+    {% set info = [c.date_range, c.time, c.price, c.age_limit] | select | list %}
+    {% if info %}<div class="info">{{ info | join(" &middot; " | safe) }}</div>{% endif %}
+    <div class="links">
+      {% if c.ticket_url %}<a href="{{ c.ticket_url }}" rel="noopener">Tickets</a>{% endif %}
+      {% for l in c.links %}<a href="{{ l.url }}" rel="noopener">{{ l.label }}</a>{% endfor %}
+      <a href="{{ c.cal_url }}" rel="noopener" target="_blank">Add to Google Calendar</a>
+    </div>
+  </div>
+  {% if c.flyer %}<img src="{{ c.flyer }}" loading="lazy" alt="Flyer for {{ c.title }}" width="84" height="84">{% endif %}
+</article>
+{% endmacro %}
+
+{% for s in sections %}
+{% if s.collapsed %}
+<section data-section="{{ s.key }}"><details>
+  <summary><h2 style="display:inline">{{ s.title }}</h2> <span class="count">{{ s.count }}</span></summary>
+{% else %}
+<section data-section="{{ s.key }}">
+  <h2>{{ s.title }} <span class="count">{{ s.count }}</span></h2>
+{% endif %}
+  {% for d in s.days %}
+  <div class="day"><h3>{{ d.label }}</h3>{% for c in d.cards %}{{ card(c) }}{% endfor %}</div>
+  {% else %}
+  <p class="empty">Nothing here.</p>
+  {% endfor %}
+{% if s.collapsed %}</details></section>{% else %}</section>{% endif %}
+{% endfor %}
+<p class="empty hidden" id="none">No events match these filters.</p>
+</main>
+
+<footer>
+  <h2>Sources</h2>
+  {% if stats %}
+  <table>
+    <tr><th>Source</th><th>Events</th><th>Unique</th><th>Error</th></tr>
+    {% for r in stats %}<tr><td>{{ r.source }}</td><td>{{ r.events }}</td><td>{{ r.unique }}</td><td class="{{ 'err' if r.error }}">{{ r.error }}</td></tr>{% endfor %}
+  </table>
+  {% else %}<p>No source stats.</p>{% endif %}
+</footer>
+</div>
+<script>
+(function () {
+  var KEY = "slo-filters-v1";
+  var sel = { cat: [], town: [] };
+  try { var s = JSON.parse(localStorage.getItem(KEY) || "null"); if (s) { sel.cat = s.cat || []; sel.town = s.town || []; } } catch (e) {}
+
+  var up = document.getElementById("updated");
+  var t = Date.parse(up.getAttribute("data-iso"));
+  if (!isNaN(t)) {
+    var h = Math.max(0, Math.floor((Date.now() - t) / 36e5));
+    up.textContent = "Updated " + (h < 1 ? "just now" : h === 1 ? "1 hour ago" : h < 48 ? h + " hours ago" : Math.floor(h / 24) + " days ago");
+    if (h >= 30) up.className = "stale";
+  }
+
+  var cards = Array.prototype.slice.call(document.querySelectorAll(".card"));
+  var groups = Array.prototype.slice.call(document.querySelectorAll(".chips"));
+
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(sel)); } catch (e) {} }
+
+  function apply() {
+    var shown = 0;
+    cards.forEach(function (c) {
+      var ok = (!sel.cat.length || sel.cat.indexOf(c.dataset.cat) > -1) &&
+               (!sel.town.length || sel.town.indexOf(c.dataset.town) > -1);
+      c.classList.toggle("hidden", !ok);
+      if (ok) shown++;
+    });
+    Array.prototype.forEach.call(document.querySelectorAll(".day"), function (d) {
+      d.classList.toggle("hidden", !d.querySelector(".card:not(.hidden)"));
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("section[data-section]"), function (s) {
+      var any = s.querySelector(".card:not(.hidden)");
+      s.classList.toggle("hidden", !any);
+    });
+    document.getElementById("count").textContent = shown;
+    document.getElementById("none").classList.toggle("hidden", shown > 0);
+    groups.forEach(function (g) {
+      var cur = sel[g.dataset.group];
+      Array.prototype.forEach.call(g.children, function (b) {
+        var v = b.dataset.v;
+        b.setAttribute("aria-pressed", String(v === "" ? cur.length === 0 : cur.indexOf(v) > -1));
+      });
+    });
+  }
+
+  groups.forEach(function (g) {
+    var valid = Array.prototype.map.call(g.children, function (b) { return b.dataset.v; });
+    sel[g.dataset.group] = sel[g.dataset.group].filter(function (v) { return valid.indexOf(v) > -1; });
+    g.addEventListener("click", function (e) {
+      var b = e.target.closest(".chip"); if (!b) return;
+      var list = sel[g.dataset.group], v = b.dataset.v;
+      if (v === "") list.length = 0;
+      else { var i = list.indexOf(v); if (i > -1) list.splice(i, 1); else list.push(v); }
+      save(); apply();
+    });
+  });
+  apply();
+})();
+</script>
+</body>
+</html>
