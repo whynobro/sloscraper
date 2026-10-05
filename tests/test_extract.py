@@ -109,3 +109,13 @@ def test_failure_leaves_post_unextracted():
     out = extract.extract_pending(conn, c)
     assert len(out) == 1
     assert [p.shortcode for p in store.unextracted_posts(conn)] == ["a"]
+
+
+def test_prompt_asks_for_times_and_tool_has_time():
+    assert "Doors 7 PM, show 8 PM" in extract.SYSTEM_PROMPT
+    assert "time" in extract.TOOL_SCHEMA["input_schema"]["properties"]["events"]["items"]["properties"]
+
+
+def test_time_passed_through():
+    c = FakeClient([tool_resp({"is_event": True, "events": [ev(time="Doors 7 PM, show 8 PM")]})])
+    assert extract.extract_post(post(), c)[1][0].time == "Doors 7 PM, show 8 PM"
