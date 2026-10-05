@@ -138,16 +138,32 @@ def _thumb(flyer_path: str, out_dir: Path) -> str:
         return ""
 
 
+LATER_DAYS = 60       # events further out than this are not rendered
+OPEN_DAYS = 14        # Later: days within this many days ahead are shown flat, the rest by collapsed week
+
+
+def is_ongoing(ev: Event, today: date) -> bool:
+    """Long runs (exhibits etc): already started and spanning 4+ days, or spanning more than 7 days."""
+    if not ev.end_date:
+        return False
+    start, end = _d(ev.date), _d(ev.end_date)
+    span = (end - start).days
+    return (start < today and span >= 4) or span > 7
+
+
 def section_for(ev: Event, today: date) -> str:
-    """One of 'weekend', 'week', 'later', 'recurring'."""
+    """One of 'today','tomorrow','weekend','week','later','ongoing','recurring'."""
     if ev.recurring:
         return "recurring"
+    if is_ongoing(ev, today):
+        return "ongoing"
     start = max(_d(ev.date), today)
+    if start == today:
+        return "today"
+    if start == today + timedelta(days=1):
+        return "tomorrow"
     sunday = today + timedelta(days=6 - today.weekday())
-    if today.weekday() >= 5:
-        wk_start = today
-    else:
-        wk_start = today + timedelta(days=4 - today.weekday())
+    wk_start = today if today.weekday() >= 5 else today + timedelta(days=4 - today.weekday())
     if wk_start <= start <= sunday:
         return "weekend"
     if start <= sunday:
@@ -180,24 +196,49 @@ def _card(ev: Event, today: date, out_dir: Path) -> dict:
     }
 
 
+SECTION_ORDER = ("today", "tomorrow", "weekend", "week", "later", "ongoing", "recurring")
+SECTION_TITLES = {"today": "Today", "tomorrow": "Tomorrow", "weekend": "This weekend",
+                  "week": "Rest of this week", "later": "Later", "ongoing": "Ongoing exhibits & runs",
+                  "recurring": "Recurring"}
+
+
+def _group_days(cards: list[dict]) -> list[dict]:
+    days: list[dict] = []
+    for c in cards:
+        if not days or days[-1]["date"] != c["day"]:
+            days.append({"date": c["day"], "label": _fmt_day(c["day"]), "cards": []})
+        days[-1]["cards"].append(c)
+    return days
+
+
 def build_sections(events: list[Event], today: date, out_dir: Path) -> list[dict]:
-    buckets: dict[str, list[dict]] = {k: [] for k in ("weekend", "week", "later", "recurring")}
+    buckets: dict[str, list[dict]] = {k: [] for k in SECTION_ORDER}
+    horizon = today + timedelta(days=LATER_DAYS)
     for ev in events:
         last = _d(ev.end_date) if ev.end_date else _d(ev.date)
         if max(_d(ev.date), last) < today:
             continue
-        buckets[section_for(ev, today)].append(_card(ev, today, out_dir))
-    titles = {"weekend": "This weekend", "week": "This week", "later": "Later", "recurring": "Recurring"}
+        key = section_for(ev, today)
+        if key == "later" and _d(ev.date) > horizon:
+            continue
+        buckets[key].append(_card(ev, today, out_dir))
     out = []
-    for key in ("weekend", "week", "later", "recurring"):
+    for key in SECTION_ORDER:
         cards = sorted(buckets[key], key=lambda c: c["sort"])
-        days: list[dict] = []
-        for c in cards:
-            if not days or days[-1]["date"] != c["day"]:
-                days.append({"date": c["day"], "label": _fmt_day(c["day"]), "cards": []})
-            days[-1]["cards"].append(c)
-        out.append({"key": key, "title": titles[key], "count": len(cards), "days": days,
-                    "collapsed": key == "recurring"})
+        sec = {"key": key, "title": SECTION_TITLES[key], "count": len(cards),
+               "collapsed": key in ("ongoing", "recurring"), "days": [], "weeks": []}
+        if key == "later":
+            cut = today + timedelta(days=OPEN_DAYS)
+            sec["days"] = _group_days([c for c in cards if c["day"] <= cut])
+            weeks: dict[date, list[dict]] = {}
+            for c in cards:
+                if c["day"] > cut:
+                    weeks.setdefault(c["day"] - timedelta(days=c["day"].weekday()), []).append(c)
+            sec["weeks"] = [{"label": f"Week of {_fmt_short(w)}", "count": len(cs), "days": _group_days(cs)}
+                            for w, cs in sorted(weeks.items())]
+        else:
+            sec["days"] = _group_days(cards)
+        out.append(sec)
     return out
 
 

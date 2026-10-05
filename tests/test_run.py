@@ -1,9 +1,14 @@
 import sys
+from datetime import timedelta
 import types
 from datetime import date
 
 import run as run_mod
 from slo_scraper.models import Event
+from slo_scraper.render import today_pacific
+
+D3 = (today_pacific() + timedelta(days=3)).isoformat()
+D4 = (today_pacific() + timedelta(days=4)).isoformat()
 
 
 def _install(monkeypatch, name, **attrs):
@@ -21,8 +26,8 @@ def test_run_end_to_end(tmp_path, monkeypatch):
     (tmp_path / "config" / "sources.yaml").write_text("instagram:\n  music:\n    - fremontslo\n", encoding="utf-8")
     (tmp_path / ".env").write_text("IG_USERNAME=tester\n", encoding="utf-8")
 
-    soon = Event(title="Test Concert", date="2026-12-31", source_name="fremont", sources=["https://fremontslo.com/"])
-    ig = Event(title="IG Show", date="2026-12-30", source_name="ig:fremontslo", confidence=0.5)
+    soon = Event(title="Test Concert", date=D3, source_name="fremont", sources=["https://fremontslo.com/"])
+    ig = Event(title="IG Show", date=D4, source_name="ig:fremontslo", confidence=0.5)
     seen = {}
 
     _install(monkeypatch, "listings", fetch_all=lambda: {"fremont": [soon], "goslo": RuntimeError("boom")})
