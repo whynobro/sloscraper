@@ -1,27 +1,35 @@
 # Edit freely. Handles marked "verify" are unconfirmed guesses; ig_fetch reports missing ones.
+# "confirmed via <site>" = handle found linked on that site's own page (no Instagram request made).
 listings:
   - name: goslo
-    url: https://goslo.events/all
+    url: https://goslo.events/all            # static HTML (RSS/Atom are weekly digests only)
   - name: fremont
-    url: https://fremontslo.com/
+    url: https://fremontslo.com/shows/       # static HTML
   - name: hellomorrobay
-    url: https://hellomorrobay.com/events/
-  - name: morrobay_org
-    url: https://www.morrobay.org/event-calendar/
+    url: https://hellomorrobay.com/wp-json/tribe/events/v1/events   # Tribe Events REST API
+  - name: newtimes
+    url: https://community.newtimesslo.com/sanluisobispo/EventSearch  # static HTML, paginated
+  # skipped: morrobay.org/event-calendar (needs JS), slobrew.com/events (JS; shows also in goslo),
+  #          kcpr.org concert guide (prose article, not a listing; better for LLM extraction)
 
 instagram:
   music:
     - fremontslo        # confirmed
-    - slobrew           # verify
-    - libertinebrewing  # verify
-    - kcpr              # verify
-    - vinaroblesamp     # verify
-    - frogandpeachpub   # verify
+    - slobrew           # confirmed via slobrew.com
+    - slobrewlive       # confirmed via slobrew.com/events (SLO Brew Live shows)
+    - libertinebrew     # confirmed via libertinebrewing.com (was libertinebrewing)
+    - kcpr913           # confirmed via kcpr.org (was kcpr)
+    - vinaroblesamp     # confirmed via vinaroblesamphitheatre.com
+    - thefrogandpeach   # confirmed via frogandpeach.com (was frogandpeachpub)
+    - thesirenmorrobay  # confirmed via thesirenmorrobay.com (Morro Bay live music)
+    - thebunkerslo      # confirmed via thebunkerslo.com (SLO live music, jazz, film)
+    - schoonerscayucos  # confirmed via schoonerscayucos.com (Cayucos live music)
   art:
-    - sloma_art         # verify (SLO Museum of Art)
-    - artsobispo        # verify (Art After Dark)
-    - artcentermorrobay # verify
+    - slomuseumofart    # confirmed via sloma.org (was sloma_art)
+    - slocounty_arts    # confirmed via artsobispo.org (Arts Obispo; Art After Dark; was artsobispo)
+    - artcentermorrobay # verify (artcentermorrobay.org links no instagram)
   community:
-    - downtownslo       # verify
-    - visitmorrobay     # verify
-    - slofilmfest       # verify
+    - downtownslo       # confirmed via downtownslo.com
+    - morrobayca        # confirmed via morrobay.org (Visit Morro Bay; was visitmorrobay)
+    - hello_morrobay    # confirmed via hellomorrobay.com
+    - slofilmfest       # confirmed via slofilmfest.org
