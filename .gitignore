@@ -1,0 +1,11 @@
+.env
+data/
+site/
+scratchpad/
+scratch_local/
+*session*
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+.claude/worktrees/

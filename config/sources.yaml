@@ -1,0 +1,27 @@
+# Edit freely. Handles marked "verify" are unconfirmed guesses; ig_fetch reports missing ones.
+listings:
+  - name: goslo
+    url: https://goslo.events/all
+  - name: fremont
+    url: https://fremontslo.com/
+  - name: hellomorrobay
+    url: https://hellomorrobay.com/events/
+  - name: morrobay_org
+    url: https://www.morrobay.org/event-calendar/
+
+instagram:
+  music:
+    - fremontslo        # confirmed
+    - slobrew           # verify
+    - libertinebrewing  # verify
+    - kcpr              # verify
+    - vinaroblesamp     # verify
+    - frogandpeachpub   # verify
+  art:
+    - sloma_art         # verify (SLO Museum of Art)
+    - artsobispo        # verify (Art After Dark)
+    - artcentermorrobay # verify
+  community:
+    - downtownslo       # verify
+    - visitmorrobay     # verify
+    - slofilmfest       # verify

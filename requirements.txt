@@ -1,0 +1,12 @@
+instaloader
+anthropic
+requests
+beautifulsoup4
+feedparser
+rapidfuzz
+jinja2
+ghp-import
+python-dotenv
+pyyaml
+pillow
+pytest
