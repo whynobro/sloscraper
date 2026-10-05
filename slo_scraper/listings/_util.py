@@ -73,7 +73,9 @@ def normalize_town(s: str) -> str:
 # Anything clearly outside SLO County (drop). Matched against venue/town/title text.
 OUT_OF_COUNTY = (
     "carson city", "reno", "las vegas", "santa maria", "santa barbara", "lompoc",
-    "bakersfield", "salinas", "monterey", "fresno", "los angeles", "san francisco",
+    "bakersfield", "salinas", "fresno", "los angeles", "san francisco",
+    "buellton", "solvang", "orcutt", "los alamos", "goleta", "carpinteria", "ventura", "king city",
+    "santa ynez", "guadalupe", "taft", "maricopa",
 )
 
 
@@ -118,3 +120,25 @@ def looks_recurring(text: str) -> bool:
 
 def assert_category(c: str) -> str:
     return c if c in CATEGORIES else "other"
+
+
+# Non-fun listings (support groups, fitness classes, club meetings...). Applied by name.
+_EXCLUDE = re.compile(
+    r"support group|anonymous|toastmasters|\byoga\b|tai chi|qi gong|\bpilates\b|fitness|"
+    r"exercise class|body fusion|zumba|\bmeetings?\b|class for adults|\blessons?\b|"
+    r"\bgroups? (meeting|session)|\brecovery\b|\bhealing\b|\bmeditat|coffee meeting|"
+    r"\btops\b|take off pounds|\bcare crew\b|\bshowers? with\b|\bnotary\b|\bcpr\b",
+    re.I,
+)
+_EXCLUDE_IF_RECURRING = re.compile(r"\bworkshops?\b|\bclasses\b|\bclass\b|\bcourse\b|\bclub\b", re.I)
+_KEEP = re.compile(r"trivia|bingo|karaoke|open mic|live music|farmers.? market|concert|comedy", re.I)
+
+
+def is_excluded(title: str, recurring: bool = False) -> bool:
+    """True for listings that are not fun events (meetings, support groups, fitness classes)."""
+    t = clean(title)
+    if _KEEP.search(t):
+        return False
+    if _EXCLUDE.search(t):
+        return True
+    return recurring and bool(_EXCLUDE_IF_RECURRING.search(t))

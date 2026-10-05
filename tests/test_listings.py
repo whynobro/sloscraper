@@ -106,3 +106,48 @@ def test_fetch_all_isolates_failures(monkeypatch):
     r = fetch_all()
     assert isinstance(r["goslo"], RuntimeError)
     assert len(r["fremont"]) == 1 and r["hellomorrobay"] == []
+
+
+def _nt_item(title, sub, venue="Some Venue", addr="1 Main St, San Luis Obispo", tags=("Arts",)):
+    tag_html = ", ".join(f'<a class="fdn-teaser-tag-link" rel="tag">{t}</a>' for t in tags)
+    return (f'<ul><li class="fdn-pres-item"><p class="fdn-teaser-headline"><a href="https://x/e">{title}</a></p>'
+            f'<p class="fdn-teaser-subheadline">{sub}</p>'
+            f'<a class="fdn-event-teaser-location-link">{venue}</a>'
+            f'<p class="fdn-teaser-infoline"><span>{addr}</span></p>'
+            f'<p class="fdn-teaser-tag-link-block">{tag_html}</p></li></ul>')
+
+
+def test_newtimes_excludes_non_fun():
+    from slo_scraper.listings import _util
+    for t in ["Healing Depression Support Group", "Tai Chi and Qi Gong", "Yoga PLUS",
+              "Slo Motion Toastmasters Club Meetings", "Gentle Chair Yoga",
+              "Co-Dependents Anonymous meeting", "Body Fusion/Exercise and Fitness Class",
+              "SLO Retired Active Men: Weekly Coffee Meeting", "Multicultural Dance Class for Adults"]:
+        assert _util.is_excluded(t, recurring=True), t
+        assert newtimes.parse(_nt_item(t, "Wednesdays, 6 p.m."), today=TODAY) == [], t
+    for t in ["Wednesday Night Pub Trivia", "CCRD Bingo Night", "Karaoke Saturdays", "Open Mic Night",
+              "Morro Bay Main Street Farmers Market", "Live Music with Faultline"]:
+        assert not _util.is_excluded(t, recurring=True), t
+    assert len(newtimes.parse(_nt_item("Wednesday Night Pub Trivia", "Wednesdays, 6:30-8:30 p.m."), today=TODAY)) == 1
+    assert len(newtimes.parse(read("newtimes_page9.html"), today=TODAY)) < 40
+
+
+def test_out_of_county_all_sources():
+    from slo_scraper.listings import _util
+    for t in ["Sourdough at Buellton Farmer's Market", "Solvang Danish Days", "Orcutt Block Party",
+              "Los Alamos Old Days", "Santa Barbara Wine Walk"]:
+        assert _util.out_of_county(t), t
+    assert not _util.out_of_county("1329 Monterey St., San Luis Obispo")
+    html = _nt_item("Sourdough at Buellton Farmer's Market", "Thu., Oct. 8, 10 a.m.", tags=("Food",))
+    assert newtimes.parse(html, today=TODAY) == []
+    html = _nt_item("Wine Night", "Thu., Oct. 8, 7 p.m.", venue="Cellar", addr="5 Alamo Pintado Rd, Solvang")
+    assert newtimes.parse(html, today=TODAY) == []
+
+
+def test_newtimes_category_keywords_beat_tags():
+    html = _nt_item("Rocky Horror Picture Show Outdoor Special Screening", "Sat., Oct. 10, 8 p.m.", tags=("Arts",))
+    assert newtimes.parse(html, today=TODAY)[0].category == "film_theater"
+    html = _nt_item("Improv Night at the Gallery", "Sat., Oct. 10, 8 p.m.", tags=("Arts",))
+    assert newtimes.parse(html, today=TODAY)[0].category == "comedy"
+    html = _nt_item("Colored Light Exhibit", "Sat., Oct. 10, 8 p.m.", tags=("Arts",))
+    assert newtimes.parse(html, today=TODAY)[0].category == "art"

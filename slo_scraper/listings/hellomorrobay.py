@@ -42,7 +42,9 @@ def _to_event(e: dict) -> Event | None:
     venue_d = e.get("venue") if isinstance(e.get("venue"), dict) else {}
     venue = u.clean(venue_d.get("venue", ""))
     city = venue_d.get("city", "")
-    if u.out_of_county(city):
+    if u.out_of_county(city, title, venue):
+        return None
+    if u.is_excluded(title):
         return None
     cats = [u.clean(c.get("name", "")) for c in e.get("categories", [])]
     start = e["start_date"]

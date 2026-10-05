@@ -61,7 +61,7 @@ def parse(html_text: str, today=None) -> list[Event]:
             venue, town, default_cat = VENUES.get(
                 venue_raw.lower(), (venue_raw, "San Luis Obispo", "other"))
             desc = _description(box.select_one(".event-details"))
-            if u.out_of_county(venue_raw, title, desc[:120]):
+            if u.out_of_county(venue_raw, title, desc[:120]) or u.is_excluded(title):
                 continue
             cat = u.guess_category(title, default=default_cat)
             events.append(Event(

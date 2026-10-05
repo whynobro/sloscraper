@@ -90,12 +90,14 @@ def parse(html_text: str, today=None) -> list[Event]:
         addr = next((x for x in spans if "," in x or re.search(r"\d", x)), "")
         town = u.normalize_town(addr.split(",")[-1]) if "," in addr else ""
         venue = u.clean(venue_el.get_text()) if venue_el else ""
-        if u.out_of_county(town, addr):
+        if u.out_of_county(town, addr, venue, title):
+            continue
+        if u.is_excluded(title, recurring):
             continue
         tags = [u.clean(a.get_text()) for a in li.select(".fdn-teaser-tag-link")]
         price_el = li.select_one(".fdn-event-teaser-price")
         desc = li.select_one(".fdn-teaser-description")
-        blob = f"{title} {' '.join(tags)}"
+        blob = f"{title} | {' '.join(tags)}"
         cat = _tag_category(tags, blob)
         events.append(Event(
             title=title, date=start.isoformat(),
@@ -110,6 +112,10 @@ def parse(html_text: str, today=None) -> list[Event]:
 
 
 def _tag_category(tags: list[str], blob: str) -> str:
+    # screening/film/theatre and comedy keywords beat tags like "Arts"
+    title_cat = u.guess_category(blob.split(" | ")[0], default="")
+    if title_cat in ("film_theater", "comedy"):
+        return title_cat
     t = " ".join(tags).lower()
     if "comedy" in t:
         return "comedy"
